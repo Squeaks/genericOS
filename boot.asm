@@ -16,8 +16,10 @@
 	section .text
 	global start:function (start.end - start)
 	global keyboard_handler
-	global read_port
-	global write_port
+	global inb
+	global outb
+	global inw
+	global outw
 	global load_idt
 
 start:
@@ -29,15 +31,25 @@ start:
 	jmp .hang
 	.end:
 
-read_port:
+inb:
 	mov edx, [esp + 4]
 	in al, dx
 	ret
 
-write_port:
+outb:
 	mov edx, [esp + 4]
 	mov al, [esp + 4 + 4]
-	out  dx, al
+	out dx, al
+	ret
+
+inw:
+	mov edx, [esp + 4]
+	in ax, dx
+	ret
+outw:
+	mov edx, [esp + 4]
+	mov ax, [esp + 8]
+	out dx, ax
 	ret
 
 keyboard_handler:

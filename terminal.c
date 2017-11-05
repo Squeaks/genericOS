@@ -2,9 +2,12 @@
 #include <stdint.h>
 
 #include "terminal.h"
+#include "serial.h"
 
 size_t TERM_POSX = 0;
 size_t TERM_POSY = 0;
+
+extern int is_serial_enabled();
 
 void term_scroll()
 {
@@ -41,6 +44,11 @@ void term_clrscr()
 void term_putchar(char c)
 {
   uint16_t *term = (uint16_t *)TERM_TOP;
+
+  if (is_serial_enabled())
+    {
+      write_serial(c);
+    }
 
   if (c == '\n')
     {
