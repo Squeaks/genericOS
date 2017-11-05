@@ -1,1 +1,1 @@
-int s_printk(char *, char *);
+int printk(char *, ...);

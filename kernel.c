@@ -93,11 +93,45 @@ void kb_init(void)
 void kmain(void)
 {
 
+  char asd[3];
+  char zxc[4];
+  char sdf[123];
+  
   term_clrscr();
+  char *bootmsg = "Starting genericOS";
+  printk("%s\n", bootmsg);
+  
 
-  s_printk("%s", "Testing printk");
-  //  term_putstr("Kernel intro\n");
+  int len = printk("num %d\n", 100);
+  printk("asd %d\n", 99);
+  printk("zxc %d\n", 321);
 
+  printk("len: %d\n", len);
+
+  printk("asd buf: %p\n", asd);
+  printk("sdf buf: %p\n", sdf);
+  printk("zxc buf: %p\n", zxc);
+
+  printk("kmain addr: %p\n", kmain);
+  printk("write_port addr: %p\n", write_port);
+  printk("read_port addr: %p\n", read_port);
+  
+
+  //  printk("len %d", len);
+  //  s_printk("asda", "qweqweqweqw\n");
+  
+  /*
+  printk("%d", (void *)1232);
+  printk("%s", (void *)"\n");
+  printk("%p", &asd);
+  printk("%p", &asd[1]);
+  printk("%x", &asd[2]);
+  
+  printk("%x", &asd[11]);
+ 
+  printk("%x", &qwe);
+  printk("%p", &qwe[1]);
+  */
   idt_init();
   kb_init();
 
