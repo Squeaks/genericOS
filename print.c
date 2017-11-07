@@ -25,8 +25,8 @@ static int d_printk(char *buf, int val, int base)
 
   if (val == 0)
     {
-      tmp[i] = '0';
-      return 1;
+      tmp[i++] = '0';
+      len++;
     }
   else
     {
