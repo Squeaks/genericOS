@@ -6,6 +6,7 @@
 #include "print.h"
 #include "serial.h"
 
+#include "register.h"
 
 #define IDT_SIZE 256
 
@@ -109,6 +110,8 @@ void kmain(void)
   char *bootmsg = "Starting genericOS";
   printk("%s\n", bootmsg);
 
+  reg reg = getreg();
+  printreg(reg);
   while(1);
 }
     
