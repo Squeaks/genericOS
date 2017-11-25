@@ -1,96 +1,98 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "keyboard_map.h"
 #include "terminal.h"
 #include "print.h"
 #include "serial.h"
-
 #include "register.h"
+#include "a20.h"
 
-#define IDT_SIZE 256
+#include "interrupts.h"
+#include "gdt.h"
 
-#define KEYBOARD_DATA_PORT 0x60
-#define KEYBOARD_STATUS_PORT 0x64
+extern void load_gdt(uint64_t *);
+extern void e820(void);
 
-struct IDT_entry {
-  unsigned short int offset_lowerbits;
-  unsigned short int sel;
-  unsigned char zero;
-  unsigned char type;
-  unsigned short int offset_upperbits;
-};
+extern void PM16(void);
 
-struct IDT_entry IDT[IDT_SIZE];
+uint64_t GDT[4];
+uint64_t GDT_16[2];
 
-extern char inb(uint8_t port);
-extern void outb(uint8_t port, unsigned char data);
-extern void keyboard_handler(void);
-extern void load_idt(unsigned long *);
-
-void idt_init(void)
+uint64_t
+create_descriptor(uint32_t base, uint32_t limit, uint16_t flag)
 {
-  unsigned long keyboard_addr;
-  unsigned long idt_addr;
-  unsigned long idt_ptr[2];
+  uint64_t descriptor;
 
-  keyboard_addr = (unsigned long)keyboard_handler;
-  IDT[0x21].offset_lowerbits = keyboard_addr & 0xffff;
-  IDT[0x21].sel = 0x08;
-  IDT[0x21].zero = 0;
-  IDT[0x21].type = 0x8e;
-  IDT[0x21].offset_upperbits = (keyboard_addr & 0xffff0000) >> 16;
+  // Create the high 32 bit segment
+  descriptor  =  limit       & 0x000F0000;         // set limit bits 19:16
+  descriptor |= (flag <<  8) & 0x00F0FF00;         // set type, p, dpl, s, g, d/b, l and avl fields
+  descriptor |= (base >> 16) & 0x000000FF;         // set base bits 23:16
+  descriptor |=  base        & 0xFF000000;         // set base bits 31:24
 
-  outb(0x20, 0x11);
-  outb(0xA0, 0x11);
+  // Shift by 32 to allow for low part of segment
+  descriptor <<= 32;
 
-  outb(0x21, 0x20);
-  outb(0xA1, 0x28);
+  // Create the low 32 bit segment
+  descriptor |= base  << 16;                       // set base bits 15:0
+  descriptor |= limit  & 0x0000FFFF;               // set limit bits 15:0
 
-  outb(0x21, 0x00);
-  outb(0xA1, 0x00);
+  //printf("0x%.16llX\n", descriptor);
+  return descriptor;
+}
 
-  outb(0x21, 0x01);
-  outb(0xA1, 0x01);
+void set_gdt()
+{
+  GDT[0] = create_descriptor(0, 0, 0);
+  GDT[1] = create_descriptor(0, 0x000FFFFF, (GDT_CODE_PL0));
+  GDT[2] = create_descriptor(0, 0x000FFFFF, (GDT_DATA_PL0));
+  GDT[3] = create_descriptor(0, 0x000FFFFF, (GDT_CODE_PL3));
+  GDT[4] = create_descriptor(0, 0x000FFFFF, (GDT_DATA_PL3));
 
-  outb(0x21, 0xff);
-  outb(0xA1, 0xff);
+  load_gdt(GDT);
+}
 
-  idt_addr = (unsigned long)IDT;
-  
-  idt_ptr[0] = (sizeof(struct IDT_entry) * IDT_SIZE) + ((idt_addr & 0xffff) << 16);
-  idt_ptr[1] = idt_addr >> 16;
+void set_gdt_16()
+{
+  GDT_16[0] = create_descriptor(0, 0, 0);
+  GDT_16[1] = create_descriptor(0, 0x0000FFFFF, (GDT_CODE_PL0_16));
+  GDT_16[2] = create_descriptor(0, 0x0000FFFFF, (GDT_DATA_PL0_16));
+  //  GDT[3] = create_descriptor(0, 0x000FFFFF, (GDT_CODE_PL3_16));
+  //  GDT[4] = create_descriptor(0, 0x000FFFFF, (GDT_DATA_PL3_16));
+  printk("set1\n");
+  load_gdt(GDT_16);
+}
 
-  load_idt(idt_ptr);
+
+void to_realmode()
+{
+  printk("to real\n");
+  //  asm volatile ("cli;" : : : );
+  printk("to real2\n");
+  set_gdt_16();
+  printk("to real3\n");
+  PM16();
+  printk("to real4\n");
 
 }
 
-void keyboard_handler_main(void)
+
+void is_protected()
 {
-  unsigned char status;
-  char keycode;
+  uint32_t val;
+  asm volatile ("mov %%cr0, %0;" : "=r" (val) : );
 
-  outb(0x20, 0x20);
+  printk("mode:%x\n", val);
 
-  status = inb(KEYBOARD_STATUS_PORT);
-
-  if (status & 0x01)
+  #if 0
+  if (val[0])
     {
-      keycode = inb(KEYBOARD_DATA_PORT);
-
-      if (keycode < 0)
-	return;
-      
-      term_putchar(keyboard_map[keycode]);
+      printk("Is protected\n");
     }
-
-  return;
-}
-
-
-void kb_init(void)
-{
-  outb(0x21, 0xFD);
+  else
+    {
+      printk("In Realmode\n");
+    }
+  #endif
 }
 
 void kmain(void)
@@ -102,16 +104,25 @@ void kmain(void)
   
   term_clrscr();
 
-  
   idt_init();
+  gen_int();
   serial_init();
   kb_init();
 
+  is_protected();
+  
   char *bootmsg = "Starting genericOS";
   printk("%s\n", bootmsg);
 
   reg reg = getreg();
   printreg(reg);
+
+  test_a20();
+
+  to_realmode();
+  
+  e820();
+  
   while(1);
 }
     

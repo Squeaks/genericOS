@@ -41,5 +41,26 @@ typedef struct{
   uint32_t edi;
 } reg;
 
+//void intcall(uint8_t);
+
 reg getreg(void);
 void printreg(reg);
+
+void write_fs(uint32_t);
+void write_es(uint16_t);
+
+void write_gs16(uint16_t);
+void write_gs32(uint32_t);
+
+uint32_t read_fs(void);
+uint32_t read_gs(void);
+uint32_t read_fs_full(uint32_t);
+uint32_t read_gs_full(uint32_t);
+
+void write_eax(uint32_t);
+void write_ebx(uint32_t);
+void write_ecx(uint32_t);
+void write_edx(uint32_t);
+void write_edi(uint32_t);
+
+
