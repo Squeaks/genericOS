@@ -80,6 +80,12 @@ void write_edx(uint32_t val)
 }
 
 
+void write_edi(uint32_t val)
+{
+  asm volatile ("movl %0, %%edi;" : : "r" (val) : );
+}
+
+
 void write_fs(uint32_t val)
 {
   asm volatile ("movl %0, %%fs;" : : "r" (val) : );
@@ -166,5 +172,4 @@ void printreg(reg reg)
   printk("esp: %p\n", reg.esp);
   printk("ebp: %p\n", reg.ebp);
   printk("esi: %p\n", reg.esi);
-  printk("edi: %p\n", reg.edi);
-}
+ }

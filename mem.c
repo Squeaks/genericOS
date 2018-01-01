@@ -10,13 +10,14 @@ struct e820_entry {
 };
   
 extern void intcall(void);
-  
+
+__attribute__ ((section(".text.realmode")))
 void e820()
 {
   struct e820_entry entry;
   reg reg;
   
-//write_edi(entry);
+  //  write_edi(((uint32_t)entry));
   write_ebx(0);
   /* "SMAP" magic */
   write_edx(0x534D4150);

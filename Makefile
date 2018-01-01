@@ -2,7 +2,7 @@ CFLAGS=-g
 
 kernel: kernel.o
 	ld -m elf_i386 -T link.ld -o kernel boot.o kc.o terminal.o print.o serial.o register.o a20.o \
-	interrupts.o mem.o realmode.o  -q
+	interrupts.o mem.o realmode.o
 
 interrupts.o:
 	gcc -m32 -c interrupts.c -o interrupts.o -ffreestanding -O2 -nostdlib ${CFLAGS}

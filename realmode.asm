@@ -1,19 +1,41 @@
-	bits 16
-	global PM16
-
-idtR:			
-	dw 0x3ff
-	dw 0
-
+	CODE32 equ 0x08
+	DATA32 equ 0x10
+	CODE16 equ 0x18
+	DATA16 equ 0x20
 	
-PM16:
+	global PM16
+	global to_real_mode
+	
+	section .data.realmode
+save_idt:
+	dw 0
+	dd 0
+save_esp:
+	dd 0
+real_ivt:
+	dw (256 * 4) - 1
+	dd 0	
+	
+
+	bits 32
+	section .text
+to_real_mode:
+
+	pushad
+	pushfd
 	cli
-	mov eax, cr0
-	and eax, 0xFFFE
-	mov cr0, eax
+	mov [save_esp], esp
+	sidt [save_idt]
+	lidt [real_ivt]
+
+	jmp CODE16:PM16 
+
+	bits 16
+	section .text.realmode
+PM16:
 
 	db 0x66
-	mov ax, 0x20
+	mov ax, DATA16
 	db 0x66
 	mov ds, ax
 	db 0x66
@@ -24,25 +46,20 @@ PM16:
 	mov gs, ax
 	db 0x66
 	mov ss, ax
-	sti
-	
-	mov eax, 0x0000E820
-	mov ebx, 0
-	mov ecx, 24
-	db 0x67
-	mov edx, 0x534D4150
-	
-	int 0x15
 
 	mov eax, cr0
-	or eax, 1
+	dec eax			;clear prot mode bit
 	mov cr0, eax
-
-	ret
 	
+	jmp dword 0:realMode
+
 realMode:
 	db 0x66
-	mov ax, 0
+	mov ax, 0x1000
+	mov ss, ax
+	xor sp, sp 		;clear sp?
+	
+	xor ax, ax
 	db 0x66
 	mov ds, ax
 	db 0x66
@@ -50,13 +67,32 @@ realMode:
 	db 0x66
 	mov gs, ax
 	db 0x66
-	mov ss, ax
-	db 0x66
 	mov es, ax
-	db 0x66
-	mov sp, 0x8000
-	db 0x66
-	lidt [0x0]
+
 	
+	cli
+	mov eax, cr0
+	inc eax
+	mov cr0, eax
+	jmp dword CODE32:PM32
+
+	bits 32
+	section .text
+PM32:	
+	mov eax, DATA32
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
+	mov dword esp, [save_esp]
+	lidt [save_idt]
+	popfd
+	popad
+
+	mov eax, 0xdead
+	;; mov ax, e820 struct
 	sti
 	ret
+
+	
