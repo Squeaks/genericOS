@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include "register.h"
+#include "print.h"
 
 struct e820_entry {
   uint64_t base;
@@ -8,24 +9,46 @@ struct e820_entry {
   uint32_t type;
   uint32_t acpi_ext;
 };
-  
-extern void intcall(void);
 
+static char *e820_type[2];
+
+struct e820_entry *e820_map;
+
+
+#if 0
 __attribute__ ((section(".text.realmode")))
-void e820()
+void do_e820()
 {
   struct e820_entry entry;
-  reg reg;
-  
-  //  write_edi(((uint32_t)entry));
-  write_ebx(0);
-  /* "SMAP" magic */
-  write_edx(0x534D4150);
-  write_eax(0x0000e820);
-  write_ecx(24);
-  
-  reg = getreg();
-  printreg(reg);
+  uint32_t count = 0;
+  int entries = 0, sig, bytes;
 
-  intcall();
+  __asm__ __volatile__ ("int $0x15" :
+	   "=a"(sig), "=c"(bytes), "=b"(count)
+			: "a"(0x0000E820), "b"(count), "c"(24), "D"(&entry));
+
+}
+#endif
+
+void print_e820_map(void *mem_map)
+{
+  //Should actually figure out the count somehow..
+
+  e820_type[0] = "0 NONE";
+  e820_type[1] = "1 RAM";
+  e820_type[2] = "2 RESERVED";
+  
+  struct e820_entry *map = mem_map;
+  char *ent_end;
+  int i;
+
+  for (i = 0; i < 5; i++)
+    {
+      printk("%d: %x - ", i, map->base);
+      ent_end = map->base + map->region_len;
+      printk("%x = %s\n", ent_end, e820_type[map->type]);
+
+      map = (char *)map + sizeof(struct e820_entry);
+    }
+  printk("e820 done\n");
 }

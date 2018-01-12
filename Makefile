@@ -29,7 +29,7 @@ a20.o:
 	gcc -m32 -c a20.c -o a20.o -ffreestanding -O2 -nostdlib -Wall ${CFLAGS}
 
 mem.o:
-	gcc -m32 -c mem.c -o mem.o -ffreestanding -O2 -nostdlib -Wall ${CFLAGS}
+	gcc -m32 -c mem.c -o mem.o -ffreestanding -O0 -nostdlib -Wall ${CFLAGS}
 
 
 kernel.o: boot.o terminal.o print.o serial.o register.o a20.o interrupts.o mem.o realmode.o
@@ -54,3 +54,6 @@ clean:
 	rm -f kernel *.o genos.iso
 
 start: clean run
+
+sea:
+	qemu-system-i386 -bios bios.bin -kernel kernel -curses -serial file:logfile.out -chardev stdio,id=seabios -device isa-debugcon,iobase=0x402,chardev=seabios 2> stderr.log

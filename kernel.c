@@ -65,18 +65,15 @@ void set_gdt_16()
   load_gdt(GDT_16);
 }
 
+extern void print_e820_map(void *);
 
 void to_realmode()
 {
-  printk("to real\n");
-  //  asm volatile ("cli;" : : : );
-  printk("to real2\n");
-  //  set_gdt_16();
-  printk("to real3\n");
-  //  PM16();
   uint32_t retval = to_real_mode();
   printk("to real4: rc = %x\n", retval);
-
+  printk("Out of realmode\n");
+  
+  print_e820_map((void *)retval);
 }
 
 #if 1
@@ -146,7 +143,6 @@ void kmain(void)
 
   to_realmode();
 
-  printk("Out of realmode\n");
   
   //  e820();
   
