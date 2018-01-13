@@ -2,18 +2,11 @@
 
 #include "register.h"
 #include "print.h"
-
-struct e820_entry {
-  uint64_t base;
-  uint64_t region_len;
-  uint32_t type;
-  uint32_t acpi_ext;
-};
+#include "e820.h"
 
 static char *e820_type[2];
 
 struct e820_entry *e820_map;
-
 
 #if 0
 __attribute__ ((section(".text.realmode")))
@@ -39,16 +32,18 @@ void print_e820_map(void *mem_map)
   e820_type[2] = "2 RESERVED";
   
   struct e820_entry *map = mem_map;
+  e820_map = mem_map;
+
   char *ent_end;
   int i;
+  printk("E820 Map:\n");
 
   for (i = 0; i < 5; i++)
     {
       printk("%d: %x - ", i, map->base);
       ent_end = map->base + map->region_len;
       printk("%x = %s\n", ent_end, e820_type[map->type]);
-
       map = (char *)map + sizeof(struct e820_entry);
     }
-  printk("e820 done\n");
+
 }

@@ -10,6 +10,8 @@
 #include "interrupts.h"
 #include "gdt.h"
 
+#include "malloc.h"
+
 extern void load_gdt(uint64_t *);
 extern void e820(void);
 
@@ -136,15 +138,40 @@ void kmain(void)
   char *bootmsg = "Starting genericOS";
   printk("%s\n", bootmsg);
 
-  reg reg = getreg();
-  printreg(reg);
-
   test_a20();
 
   to_realmode();
 
+  mem_init();
+
+  char *test = (char *)malloc(4);
+  char *q = malloc(2);
+  char *r = malloc(32);
+  char *o = malloc(64);
+
+  printk("test: %x\n", test);
+  printk("q: %x\n", q);
+  printk("r: %x\n", r);
+  printk("o: %x\n", o);
   
-  //  e820();
+  free(test);
+  free(q);
+  free(o);
+  free(r);
+
+  char *p = malloc(3);
+  printk("p: %x\n", p);
+  char *a = malloc(120);
+  char *b = malloc(17);
+
+  printk("a: %x\n", a);
+  printk("b: %x\n", b);
+
+  free(a);
+  printk("freed a\n");
+  char *c = malloc(20);
+  printk("c: %x\n", c);
+
   
   while(1);
 }
